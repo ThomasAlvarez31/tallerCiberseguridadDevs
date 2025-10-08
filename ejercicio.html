@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ejercicio DEVS</title>
+    <style>
+        .ejercicio { border: 2px solid blue; padding: 15px; margin: 10px; }
+        .problema { background: #ffe6e6; padding: 10px; }
+        .solucion { background: #e6ffe6; padding: 10px; display: none; }
+    </style>
+</head>
+<body>
+    <h1>🎯 Ejercicio Práctico</h1>
+
+    <div class="ejercicio">
+        <h2>Problema: Comentarios Vulnerables a XSS</h2>
+        
+        <div class="problema">
+            <h3>🔴 CÓDIGO ACTUAL (VULNERABLE):</h3>
+            <input type="text" id="comentarioInput" placeholder='Ingrese su comentario'>
+            <button onclick="agregarComentarioVulnerable()">Agregar Comentario (VULNERABLE)</button>
+            <div id="comentariosBox" style="border: 1px solid red; min-height: 100px; padding: 10px;"></div>
+        </div>
+
+        <button onclick="mostrarSolucion()">Ver Solución</button>
+        
+        <div id="solucionBox" class="solucion">
+            <h3>✅ SOLUCIÓN SEGURA:</h3>
+            <button onclick="agregarComentarioSeguro()">Agregar Comentario (SEGURO)</button>
+            <p><strong>¿Por qué es seguro?</strong> Usamos <code>createElement</code> y <code>textContent</code> en lugar de <code>innerHTML</code></p>
+        </div>
+    </div>
+
+    <script>
+        // 🔴 CÓDIGO VULNERABLE - ¡FUNCIONA el ataque!
+        function agregarComentarioVulnerable() {
+            const comentario = document.getElementById('comentarioInput').value;
+            
+            // ❌ VULNERABLE - permite XSS
+            document.getElementById('comentariosBox').innerHTML += 
+                `<div class="comentario">${comentario}</div>`;
+        }
+
+        // ✅ CÓDIGO SEGURO
+        function agregarComentarioSeguro() {
+            const comentario = document.getElementById('comentarioInput').value;
+            
+            // ✅ SEGURO - no permite XSS
+            const div = document.createElement('div');
+            div.className = 'comentario';
+            div.textContent = comentario;
+            
+            document.getElementById('comentariosBox').appendChild(div);
+        }
+
+        function mostrarSolucion() {
+            document.getElementById('solucionBox').style.display = 'block';
+        }
+    </script>
+</body>
+</html>

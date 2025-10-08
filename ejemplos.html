@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Página Vulnerable</title>
+    <style>
+        .vulnerable { background: #ffe6e6; padding: 10px; margin: 10px; border: 2px solid red; }
+        .secure { background: #e6ffe6; padding: 10px; margin: 10px; border: 2px solid green; }
+        button { margin: 5px; padding: 8px; }
+        input { margin: 5px; padding: 5px; width: 300px; }
+        .result { min-height: 50px; border: 1px dashed #ccc; padding: 10px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>🚨 Demostración de Vulnerabilidades</h1>
+
+    <!-- 🔴 VULNERABILIDAD 1: XSS Básico -->
+    <div class="vulnerable">
+        <h2>🔴 1. Ataque XSS (Cross-Site Scripting)</h2>
+        <p>Escribe algo que se mostrará en la página:</p>
+        <input type="text" id="userInput" placeholder='Escribe: <img src="x" onerror="alert("XSS!")">'>
+        <button onclick="mostrarVulnerable()">Mostrar (VULNERABLE - innerHTML)</button>
+        <button onclick="mostrarSeguro()">Mostrar (SEGURO - textContent)</button>
+        <div id="resultado" class="result"></div>
+    </div>
+
+    <!-- 🔴 VULNERABILIDAD 2: SQL Injection Simulada -->
+    <div class="vulnerable">
+        <h2>🔴 2. SQL Injection Simulada</h2>
+        <p>Base de datos simulada: usuarios = ["admin", "usuario1", "pedro"]</p>
+        <input type="text" id="usuario" placeholder='Escribe: admin" OR "1"="1'>
+        <button onclick="validarDebil()">Validar (VULNERABLE a SQLi)</button>
+        <button onclick="validarFuerte()">Validar (SEGURO contra SQLi)</button>
+        <div id="mensaje" class="result"></div>
+    </div>
+
+    <!-- 🔴 VULNERABILIDAD 3: Eval Peligroso -->
+    <div class="vulnerable">
+        <h2>🔴 3. Ejecución de Código Peligrosa</h2>
+        <p>Escribe una operación matemática o código malicioso:</p>
+        <input type="text" id="operacion" placeholder='Escribe: alert("Peligro!"); 2+2'>
+        <button onclick="calcularPeligroso()">Calcular (PELIGROSO - usa eval())</button>
+        <button onclick="calcularSeguro()">Calcular (SEGURO - validación)</button>
+        <div id="calculadora" class="result"></div>
+    </div>
+
+    <script>
+        // Base de datos simulada para SQL Injection
+        const usuariosSimulados = ["admin", "usuario1", "pedro"];
+        const contrasenasSimuladas = {
+            "admin": "123456",
+            "usuario1": "password123", 
+            "pedro": "miContraseña"
+        };
+
+        // 🔴 VULNERABILIDAD 1: XSS - innerHTML peligroso
+        function mostrarVulnerable() {
+            const input = document.getElementById('userInput').value;
+            // ¡PELIGRO! Usar innerHTML permite ejecutar código
+            document.getElementById('resultado').innerHTML = 
+                "<strong>Tú escribiste:</strong> " + input;
+            
+            mostrarExplicacion('XSS', 
+                '❌ Usando innerHTML, el código JavaScript se ejecuta. ' +
+                'Esto permite robar cookies, redirigir usuarios, etc.');
+        }
+
+        // ✅ VERSIÓN SEGURA
+        function mostrarSeguro() {
+            const input = document.getElementById('userInput').value;
+            // ¡SEGURO! textContent no ejecuta código
+            document.getElementById('resultado').textContent = 
+                "Tú escribiste: " + input;
+            
+            mostrarExplicacion('XSS', 
+                '✅ Usando textContent, el código se muestra como texto ' +
+                'y no se ejecuta. ¡Esto es seguro!');
+        }
+
+        // 🔴 VULNERABILIDAD 2: SQL Injection Simulada
+        function validarDebil() {
+            const usuario = document.getElementById('usuario').value;
+            
+            // SIMULACIÓN de consulta SQL vulnerable
+            // En una app real sería: "SELECT * FROM users WHERE username = '" + usuario + "'"
+            const consultaSimulada = `Buscar usuario: ${usuario}`;
+            
+            // Validación vulnerable que simula SQL Injection
+            let accesoConcedido = false;
+            
+            // ¡VULNERABLE! Concatenación directa en la "consulta"
+            if (usuario.includes('" OR "1"="1') || usuario.includes("' OR '1'='1")) {
+                accesoConcedido = true; // SQL Injection exitoso
+                document.getElementById('mensaje').innerHTML = 
+                    "🔓 <strong>ACCESO CONCEDIDO</strong> - SQL Injection funcionó!<br>" +
+                    "Consulta simulada: SELECT * FROM users WHERE username = '" + usuario + "'<br>" +
+                    "Resultado: Se devolvieron TODOS los usuarios";
+            } else if (usuariosSimulados.includes(usuario.replace(/["']/g, ''))) {
+                accesoConcedido = true;
+                document.getElementById('mensaje').innerHTML = 
+                    "✅ Acceso concedido para usuario válido";
+            } else {
+                document.getElementById('mensaje').innerHTML = 
+                    "❌ Acceso denegado - Usuario no encontrado";
+            }
+            
+            mostrarExplicacion('SQL Injection',
+                '❌ La entrada del usuario se concatena directamente en la consulta. ' +
+                'El atacante puede modificar la lógica SQL con: <code>admin" OR "1"="1</code>');
+        }
+
+        // ✅ VERSIÓN SEGURA contra SQL Injection
+        function validarFuerte() {
+            const usuario = document.getElementById('usuario').value;
+            
+            // Validación segura - consulta parametrizada simulada
+            const usuarioLimpio = usuario.replace(/["';]/g, ''); // Limpiar caracteres peligrosos
+            
+            if (usuariosSimulados.includes(usuarioLimpio)) {
+                document.getElementById('mensaje').innerHTML = 
+                    "✅ Acceso concedido (validación segura)";
+            } else {
+                document.getElementById('mensaje').innerHTML = 
+                    "❌ Acceso denegado - Usuario no válido<br>" +
+                    "Consulta segura: SELECT * FROM users WHERE username = ? [parámetro: " + usuarioLimpio + "]";
+            }
+            
+            mostrarExplicacion('SQL Injection',
+                '✅ Usando consultas parametrizadas, la entrada del usuario ' +
+                'se trata como DATA, no como CÓDIGO. ¡SQL Injection bloqueado!');
+        }
+
+        // 🔴 VULNERABILIDAD 3: eval() es PELIGROSO
+        function calcularPeligroso() {
+            const operacion = document.getElementById('operacion').value;
+            try {
+                // ¡PELIGRO! eval ejecuta CUALQUIER código JavaScript
+                const resultado = eval(operacion);
+                document.getElementById('calculadora').innerHTML = 
+                    "🔓 <strong>Resultado (PELIGROSO):</strong> " + resultado + 
+                    "<br>¡Cuidado! Se ejecutó todo el código JavaScript";
+            } catch (error) {
+                document.getElementById('calculadora').innerHTML = 
+                    "Error: " + error.message;
+            }
+            
+            mostrarExplicacion('eval() peligroso',
+                '❌ eval() ejecuta CUALQUIER código JavaScript. ' +
+                'Puede borrar datos, redirigir usuarios, etc.');
+        }
+
+        // ✅ VERSIÓN SEGURA
+        function calcularSeguro() {
+            const operacion = document.getElementById('operacion').value;
+            
+            // Solo permitir números y operadores matemáticos
+            if (!/^[0-9+\-*/().\s]+$/.test(operacion)) {
+                document.getElementById('calculadora').innerHTML = 
+                    "❌ <strong>Bloqueado por seguridad:</strong> Solo se permiten números y + - * / ( )";
+                return;
+            }
+            
+            try {
+                // Método más seguro que eval
+                const resultado = Function('"use strict"; return (' + operacion + ')')();
+                document.getElementById('calculadora').innerHTML = 
+                    "✅ <strong>Resultado seguro:</strong> " + resultado;
+            } catch (error) {
+                document.getElementById('calculadora').innerHTML = 
+                    "Error en la operación matemática";
+            }
+            
+            mostrarExplicacion('eval() seguro',
+                '✅ Validamos que solo contenga caracteres matemáticos. ' +
+                '¡Código malicioso bloqueado!');
+        }
+
+        function mostrarExplicacion(tipo, mensaje) {
+            console.log(`🔍 ${tipo}: ${mensaje}`);
+        }
+    </script>
+
+    <!-- 🎯 INSTRUCCIONES DE DEMOSTRACIÓN -->
+    <div class="secure">
+        <h2>🎯 INSTRUCCIONES PARA DEMOSTRAR</h2>
+        
+        <h3>1. XSS - Cross Site Scripting</h3>
+        <p><strong>Escribe esto:</strong> <code>&lt;img src="x" onerror="alert('XSS Funciona!')"&gt;</code></p>
+        <p>Luego haz clic en <strong>"Mostrar (VULNERABLE)"</strong> - ¡Se ejecutará el alert!</p>
+        
+        <h3>2. SQL Injection</h3>
+        <p><strong>Escribe esto:</strong> <code>admin" OR "1"="1</code></p>
+        <p>Luego haz clic en <strong>"Validar (VULNERABLE a SQLi)"</strong> - ¡Acceso concedido!</p>
+        
+        <h3>3. Ejecución de Código</h3>
+        <p><strong>Escribe esto:</strong> <code>alert('Código Peligroso!'); 2+2</code></p>
+        <p>Luego haz clic en <strong>"Calcular (PELIGROSO)"</strong> - ¡Se ejecuta el alert y el cálculo!</p>
+    </div>
+</body>
+</html>

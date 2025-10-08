@@ -31,11 +31,9 @@
     </div>
 
     <script>
-        // 🔴 CÓDIGO VULNERABLE - ¡FUNCIONA el ataque!
         function agregarComentarioVulnerable() {
             const comentario = document.getElementById('comentarioInput').value;
             
-            // ❌ VULNERABLE - permite XSS
             document.getElementById('comentariosBox').innerHTML += 
                 `<div class="comentario">${comentario}</div>`;
         }
@@ -43,8 +41,7 @@
         // ✅ CÓDIGO SEGURO
         function agregarComentarioSeguro() {
             const comentario = document.getElementById('comentarioInput').value;
-            
-            // ✅ SEGURO - no permite XSS
+        
             const div = document.createElement('div');
             div.className = 'comentario';
             div.textContent = comentario;
